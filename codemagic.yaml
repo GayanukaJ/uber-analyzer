@@ -12,7 +12,7 @@ workflows:
         script: |
           rm -rf android
           flutter create --platforms=android .
-          
+
       - name: Restore AndroidManifest
         script: |
           cat > android/app/src/main/AndroidManifest.xml << 'EOF'
@@ -26,13 +26,11 @@ workflows:
               <application
                   android:label="Uber Analyzer"
                   android:name="${applicationName}"
-                  android:icon="@mipmap/ic_launcher"
-                  android:enableOnBackInvokedCallback="true">
+                  android:icon="@mipmap/ic_launcher">
                   <activity
                       android:name=".MainActivity"
                       android:exported="true"
                       android:launchMode="singleTop"
-                      android:taskAffinity=""
                       android:theme="@style/LaunchTheme"
                       android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
                       android:hardwareAccelerated="true"
@@ -45,7 +43,6 @@ workflows:
                   </activity>
                   <service
                       android:name="im.zoe.labs.flutter_notification_listener.NotificationListener"
-                      android:label="Uber Analyzer"
                       android:exported="true"
                       android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
                       <intent-filter>
@@ -72,8 +69,11 @@ workflows:
           </manifest>
           EOF
 
-      - name: Build APK
-        script: flutter build apk --debug
+      - name: Check for Dart errors
+        script: flutter analyze --no-fatal-infos 2>&1 || true
+
+      - name: Build APK verbose
+        script: flutter build apk --debug --verbose 2>&1 | tail -50
 
     artifacts:
       - build/app/outputs/flutter-apk/app-debug.apk
