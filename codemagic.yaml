@@ -13,6 +13,16 @@ workflows:
           rm -rf android
           flutter create --platforms=android .
 
+      - name: Fix v1 embedding
+        script: |
+          # Remove the v1 embedding marker that causes the error
+          find . -name "*.gradle" -exec grep -l "flutterEmbedding" {} \; | xargs sed -i '' 's/flutterEmbedding = 1/flutterEmbedding = 2/g' 2>/dev/null || true
+          # Ensure local.properties exists
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          echo "sdk.dir=$ANDROID_SDK_ROOT" >> android/local.properties
+          # Remove any v1 embedding flags
+          grep -r "v1EmbeddingSupport\|flutterEmbedding" android/ || echo "No v1 markers found"
+
       - name: Restore AndroidManifest
         script: |
           cat > android/app/src/main/AndroidManifest.xml << 'EOF'
@@ -69,11 +79,14 @@ workflows:
           </manifest>
           EOF
 
-      - name: Check for Dart errors
-        script: flutter analyze --no-fatal-infos 2>&1 || true
+      - name: Show gradle files for debug
+        script: |
+          cat android/app/build.gradle
+          echo "---"
+          cat android/local.properties
 
-      - name: Build APK verbose
-        script: flutter build apk --debug --verbose 2>&1 | tail -50
+      - name: Build APK
+        script: flutter build apk --debug
 
     artifacts:
       - build/app/outputs/flutter-apk/app-debug.apk
